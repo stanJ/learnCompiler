@@ -1,22 +1,63 @@
+import { isAlpha, isDigit, isBlank } from "../utils/dealChar";
+
 // 分词步骤
 // 输入一段script字符串，解析成一个token数组
 
+export enum TokenType {
+  Identifier = "Identifier",
+  IntLiteral = "IntLiteral",
+  Assignment = "Assignment"
+}
+
 export interface Token {
-  type: string;
-  text: string;
+  type?: TokenType;
+  text?: string;
 }
 
 export const tokenize = (code: string) => {
   const tokens: Token[] = [];
   const chars = code.split("");
   const reader = new CharArrayReader(chars);
-  let tokenText: StringBuffer;
-  let token: Token;
+  let tokenText = new StringBuffer();
+  let token: Token = {};
+  const initToken = (ch: string) => {
+    if (tokenText.length() > 0) {
+      token.text = tokenText.toString();
+      tokens.push(token)
+      tokenText = new StringBuffer();
+      token = {};
+    }
+    let newState = DfaState.Initial;
+    if (isAlpha(ch)) {
+      if (ch === "i") {
+        newState = DfaState.Id_int1;
+      } else {
+        newState = DfaState.Id;
+      }
+      token.type = TokenType.Identifier;
+      tokenText.append(ch);
+    } else if (isDigit(ch)) {
+      newState = DfaState.IntLiteral;
+      token.type = TokenType.IntLiteral;
+      tokenText.append(ch);
+    } else if (ch === "=") {
+      newState = DfaState.Assignment;
+      token.type = TokenType.Assignment;
+      tokenText.append(ch);
+    } else {
+      newState = DfaState.Initial;
+    }
+    return newState;
+  }
   const automateState = () => {
 
     let state = DfaState.Initial;
-    while () {
-  
+    let ch: any;
+    while ((ch = reader.read()) !== -1) {
+      switch (state) {
+        case DfaState.Initial:
+
+      }
     }
   }
 }
@@ -68,18 +109,21 @@ export class StringBuffer {
   toString() {
     return this.strs.join("");
   }
-}
-
-export const initToken = (char: string) => {
-
+  length() {
+    return this.strs.length;
+  }
 }
 
 export enum DfaState {
   Initial = "Initial",
+  Id_int1 = "Id_int1",
+  Id_int2 = "Id_int2",
+  Id_int3 = "Id_int3",
   Id = "Id",
   IntLiteral = "IntLiteral",
   GT = "GT",
-  GE = "GE"
+  GE = "GE",
+  Assignment = "Assignment"
 }
 
 export interface TokenReader {
