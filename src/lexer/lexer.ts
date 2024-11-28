@@ -6,6 +6,22 @@ import { isAlpha, isDigit, isBlank } from "../utils/dealChar";
 export enum TokenType {
   Identifier = "Identifier",
   IntLiteral = "IntLiteral",
+  Assignment = "Assignment",
+  GE = "GE",
+  GT = "GT",
+  Int = "Int"
+}
+
+export enum DfaState {
+  Initial = "Initial",
+  Id_int1 = "Id_int1",
+  Id_int2 = "Id_int2",
+  Id_int3 = "Id_int3",
+  Int = "Int",
+  Id = "Id",
+  IntLiteral = "IntLiteral",
+  GT = "GT",
+  GE = "GE",
   Assignment = "Assignment"
 }
 
@@ -49,17 +65,81 @@ export const tokenize = (code: string) => {
     }
     return newState;
   }
-  const automateState = () => {
-
-    let state = DfaState.Initial;
-    let ch: any;
-    while ((ch = reader.read()) !== -1) {
-      switch (state) {
-        case DfaState.Initial:
-
-      }
+  const transitionState = (curState: DfaState, curChar: string): DfaState => {
+    switch (curState) {
+      case DfaState.Initial:
+        curState = initToken(curChar);
+        break;
+      case DfaState.Id:
+        if (isAlpha(curChar) || isDigit(curChar)) {
+          tokenText.append(curChar);
+        } else {
+          curState = initToken(curChar)
+        }
+        break;
+      case DfaState.GT:
+        if (curChar === "=") {
+          token.type = TokenType.GE;
+          curState = DfaState.GE;
+          tokenText.append(ch);
+        } else {
+          curState = initToken(curChar);
+        }
+        break;
+      case DfaState.GE:
+      case DfaState.Assignment:
+        curState = initToken(curChar);
+        break;
+      case DfaState.IntLiteral:
+        if (isDigit(curChar)) {
+          tokenText.append(curChar);
+        } else {
+          curState = initToken(curChar);
+        }
+        break;
+      case DfaState.Id_int1:
+        if (curChar === "n") {
+          curState = DfaState.Id_int2;
+          tokenText.append(curChar);
+        } else if (isDigit(curChar) || isAlpha(curChar)) {
+          curState = DfaState.Id;
+          tokenText.append(curChar)
+        } else {
+          curState = initToken(curChar);
+        }
+        break;
+      case DfaState.Id_int2:
+        if (curChar === "t") {
+          curState = DfaState.Id_int3;
+          tokenText.append(curChar);
+        } else if (isDigit(curChar) || isAlpha(curChar)) {
+          curState = DfaState.Id;
+          tokenText.append(curChar)
+        } else {
+          curState = initToken(curChar);
+        }
+        break;
+      case DfaState.Id_int3:
+        if (isBlank(curChar)) {
+          token.type = TokenType.Int;
+          curState = initToken(curChar);
+        } else {
+          curState = DfaState.Id;
+          tokenText.append(curChar);
+        }
+        break;
     }
+    return curState;
   }
+  let state = DfaState.Initial;
+  let ch: any;
+  while ((ch = reader.read()) !== -1) {
+    state = transitionState(state, ch)
+  }
+  if (tokenText.length() > 0) {
+    initToken(ch)
+  }
+  return tokens;
 }
 
 export class CharArrayReader {
@@ -112,18 +192,6 @@ export class StringBuffer {
   length() {
     return this.strs.length;
   }
-}
-
-export enum DfaState {
-  Initial = "Initial",
-  Id_int1 = "Id_int1",
-  Id_int2 = "Id_int2",
-  Id_int3 = "Id_int3",
-  Id = "Id",
-  IntLiteral = "IntLiteral",
-  GT = "GT",
-  GE = "GE",
-  Assignment = "Assignment"
 }
 
 export interface TokenReader {
